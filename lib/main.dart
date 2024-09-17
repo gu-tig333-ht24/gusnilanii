@@ -1,23 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+List<ToDoItem> startingList = [
+  ToDoItem("Have fun", false),
+];
+
 class MyState extends ChangeNotifier {
-  final List<ToDoItem> _toDoList = [
-    ToDoItem("Have fun", false),
-    ToDoItem("Have funz", true),
-    ToDoItem("Dance", false),
-    ToDoItem("Do the split", false),
-  ];
-
+  final List<ToDoItem> _toDoList = startingList;
+  List<ToDoItem> _toDoListDisplay = startingList;
   int filter = 1;
-
-  // ignore: prefer_final_fields
-  List<ToDoItem> _toDoListDisplay = [
-    ToDoItem("Have fun", false),
-    ToDoItem("Have funz", true),
-    ToDoItem("Dance", false),
-    ToDoItem("Do the split", false),
-  ];
 
   List<ToDoItem> get toDoList => _toDoList;
   List<ToDoItem> get toDoListDisplay => _toDoListDisplay;
@@ -49,12 +40,15 @@ class MyState extends ChangeNotifier {
     switch (filter) {
       case 1:
         _toDoListDisplay = _toDoList;
+        break;
       case 2:
         _toDoListDisplay =
             _toDoList.where((item) => item.isItCompleted == true).toList();
+        break;
       case 3:
         _toDoListDisplay =
             _toDoList.where((item) => item.isItCompleted == false).toList();
+        break;
     }
     notifyListeners();
   }
