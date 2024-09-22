@@ -1,38 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-List<ToDoItem> startingList = [
-  ToDoItem("Have fun", false),
-];
+import '/internet_interactor.dart';
 
 class MyState extends ChangeNotifier {
-  final List<ToDoItem> _toDoList = startingList;
-  List<ToDoItem> _toDoListDisplay = startingList;
+  List<ToDoItem> _toDoList = [];
+  List<ToDoItem> _toDoListDisplay = [];
   int filter = 1;
+  bool loading = false;
 
   List<ToDoItem> get toDoList => _toDoList;
   List<ToDoItem> get toDoListDisplay => _toDoListDisplay;
 
+  void fetchToDoList() async {
+    var toDoList = InternetInteractor.getTodos();
+    _toDoList = await toDoList;
+    updateDisplay();
+  }
+
+  void add(ToDoItem newItem) async {
+    loading = true;
+    notifyListeners();
+    _toDoList = await InternetInteractor.createToDo(newItem);
+    updateDisplay();
+  }
+
+  void remove(ToDoItem itemToRemove) async {
+    loading = true;
+    notifyListeners();
+    _toDoList = await InternetInteractor.removeToDo(itemToRemove);
+    updateDisplay();
+  }
+
+  void updateStatus(ToDoItem itemToUpdate) async {
+    loading = true;
+    notifyListeners();
+    _toDoList = await InternetInteractor.updateToDo(itemToUpdate);
+    updateDisplay();
+  }
+
   void setFilter(int newFilter) {
     filter = newFilter;
-    updateDisplay();
-  }
-
-  void add(ToDoItem newItem) {
-    _toDoList.add(newItem);
-    updateDisplay();
-  }
-
-  void remove(ToDoItem itemToRemove) {
-    _toDoList.remove(itemToRemove);
-    updateDisplay();
-  }
-
-  void updateStatus(ToDoItem itemToUpdate) {
-    _toDoList[_toDoList.indexWhere((item) => item == itemToUpdate)]
-            .isItCompleted =
-        !_toDoList[_toDoList.indexWhere((item) => item == itemToUpdate)]
-            .isItCompleted;
     updateDisplay();
   }
 
@@ -43,20 +50,22 @@ class MyState extends ChangeNotifier {
         break;
       case 2:
         _toDoListDisplay =
-            _toDoList.where((item) => item.isItCompleted == true).toList();
+            _toDoList.where((item) => item.done == true).toList();
         break;
       case 3:
         _toDoListDisplay =
-            _toDoList.where((item) => item.isItCompleted == false).toList();
+            _toDoList.where((item) => item.done == false).toList();
         break;
     }
+    loading = false;
     notifyListeners();
   }
 }
 
 void main() {
   MyState state = MyState();
-
+  state.fetchToDoList();
+  state.updateDisplay();
   runApp(
     ChangeNotifierProvider(create: (context) => state, child: MyApp()),
   );
@@ -113,14 +122,28 @@ class MyHomePage extends StatelessWidget {
                 MaterialPageRoute(builder: (context) => AddItemToToDoPage()));
           },
           child: Icon(Icons.add),
-        ));
+        ),
+        bottomSheet: Container(
+            color: Colors.white,
+            child: Icon(context.watch<MyState>().loading ? Icons.wifi : null,
+                size: 40)));
   }
 }
 
 class ToDoItem {
-  final String actionItem;
-  bool isItCompleted;
-  ToDoItem(this.actionItem, this.isItCompleted);
+  final String title;
+  bool done;
+  final String? id;
+
+  ToDoItem(this.title, this.done, [this.id]);
+
+  factory ToDoItem.fromJson(Map<String, dynamic> json) {
+    return ToDoItem(json["title"], json["done"], json["id"]);
+  }
+
+  Map<String, dynamic> fromJson() {
+    return {"id": id, "title": title, "done": done};
+  }
 }
 
 class ToDoButton extends StatelessWidget {
@@ -136,16 +159,15 @@ class ToDoButton extends StatelessWidget {
           Padding(
             padding: EdgeInsets.all(15),
             child: Checkbox(
-              value: event.isItCompleted,
+              value: event.done,
               onChanged: (value) => context.read<MyState>().updateStatus(event),
             ),
           ),
           Text(
-            event.actionItem,
+            event.title,
             style: TextStyle(
                 fontSize: 21,
-                decoration:
-                    event.isItCompleted ? TextDecoration.lineThrough : null),
+                decoration: event.done ? TextDecoration.lineThrough : null),
           ),
           Expanded(
               child:
