@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import "main.dart";
+import 'to_do_items.dart';
 
 String ENDPOINT = "https://todoapp-api.apps.k8s.gu.se";
 String apiKey = "e78b5f31-8969-4a97-b493-16361a5c4233";

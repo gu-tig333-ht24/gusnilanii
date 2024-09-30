@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '/internet_interactor.dart';
+import '/to_do_items.dart';
+import 'to_do_button.dart';
 
 class MyState extends ChangeNotifier {
   List<ToDoItem> _toDoList = [];
@@ -127,121 +129,5 @@ class MyHomePage extends StatelessWidget {
             color: Colors.white,
             child: Icon(context.watch<MyState>().loading ? Icons.wifi : null,
                 size: 40)));
-  }
-}
-
-class ToDoItem {
-  final String title;
-  bool done;
-  final String? id;
-
-  ToDoItem(this.title, this.done, [this.id]);
-
-  factory ToDoItem.fromJson(Map<String, dynamic> json) {
-    return ToDoItem(json["title"], json["done"], json["id"]);
-  }
-
-  Map<String, dynamic> fromJson() {
-    return {"id": id, "title": title, "done": done};
-  }
-}
-
-class ToDoButton extends StatelessWidget {
-  final ToDoItem event;
-  ToDoButton(this.event, {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-        decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: Colors.grey))),
-        child: Row(mainAxisAlignment: MainAxisAlignment.start, children: [
-          Padding(
-            padding: EdgeInsets.all(15),
-            child: Checkbox(
-              value: event.done,
-              onChanged: (value) => context.read<MyState>().updateStatus(event),
-            ),
-          ),
-          Text(
-            event.title,
-            style: TextStyle(
-                fontSize: 21,
-                decoration: event.done ? TextDecoration.lineThrough : null),
-          ),
-          Expanded(
-              child:
-                  Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Padding(
-              padding: EdgeInsets.all(15),
-              child: IconButton(
-                onPressed: () {
-                  context.read<MyState>().remove(event);
-                },
-                icon: Icon(
-                  Icons.close,
-                  size: 32,
-                ),
-              ),
-            ),
-          ])),
-        ]));
-  }
-}
-
-class AddItemToToDoPage extends StatelessWidget {
-  AddItemToToDoPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    String newItemToAdd = "";
-    return Scaffold(
-        appBar: AppBar(
-            title: const Text("TIG333 TODO",
-                style: TextStyle(color: Colors.white)),
-            backgroundColor: Colors.deepPurple),
-        body: Column(
-          children: [
-            Padding(
-              padding:
-                  EdgeInsets.only(right: 20, left: 20, top: 30, bottom: 30),
-              child: TextField(
-                onChanged: (value) {
-                  newItemToAdd = value;
-                },
-                decoration: InputDecoration(
-                    border: OutlineInputBorder(), hintText: "Input text here"),
-              ),
-            ),
-            GestureDetector(
-                onTap: () {
-                  if (newItemToAdd == "") {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: const Text("The text box is empty"),
-                          actions: <Widget>[
-                            TextButton(
-                              child: const Text('Ok'),
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  } else {
-                    context.read<MyState>().add(ToDoItem(newItemToAdd, false));
-                    Navigator.pop(context);
-                  }
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [Icon(Icons.add), Text("ADD")],
-                ))
-          ],
-        ));
   }
 }
