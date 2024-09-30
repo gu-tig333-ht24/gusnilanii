@@ -1,38 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-List<ToDoItem> startingList = [
-  ToDoItem("Have fun", false),
-];
+import '/internet_interactor.dart';
+import '/to_do_items.dart';
+import 'to_do_button.dart';
 
 class MyState extends ChangeNotifier {
-  final List<ToDoItem> _toDoList = startingList;
-  List<ToDoItem> _toDoListDisplay = startingList;
+  List<ToDoItem> _toDoList = [];
+  List<ToDoItem> _toDoListDisplay = [];
   int filter = 1;
+  bool loading = false;
 
   List<ToDoItem> get toDoList => _toDoList;
   List<ToDoItem> get toDoListDisplay => _toDoListDisplay;
 
+  void fetchToDoList() async {
+    var toDoList = InternetInteractor.getTodos();
+    _toDoList = await toDoList;
+    updateDisplay();
+  }
+
+  void add(ToDoItem newItem) async {
+    loading = true;
+    notifyListeners();
+    _toDoList = await InternetInteractor.createToDo(newItem);
+    updateDisplay();
+  }
+
+  void remove(ToDoItem itemToRemove) async {
+    loading = true;
+    notifyListeners();
+    _toDoList = await InternetInteractor.removeToDo(itemToRemove);
+    updateDisplay();
+  }
+
+  void updateStatus(ToDoItem itemToUpdate) async {
+    loading = true;
+    notifyListeners();
+    _toDoList = await InternetInteractor.updateToDo(itemToUpdate);
+    updateDisplay();
+  }
+
   void setFilter(int newFilter) {
     filter = newFilter;
-    updateDisplay();
-  }
-
-  void add(ToDoItem newItem) {
-    _toDoList.add(newItem);
-    updateDisplay();
-  }
-
-  void remove(ToDoItem itemToRemove) {
-    _toDoList.remove(itemToRemove);
-    updateDisplay();
-  }
-
-  void updateStatus(ToDoItem itemToUpdate) {
-    _toDoList[_toDoList.indexWhere((item) => item == itemToUpdate)]
-            .isItCompleted =
-        !_toDoList[_toDoList.indexWhere((item) => item == itemToUpdate)]
-            .isItCompleted;
     updateDisplay();
   }
 
@@ -43,20 +52,22 @@ class MyState extends ChangeNotifier {
         break;
       case 2:
         _toDoListDisplay =
-            _toDoList.where((item) => item.isItCompleted == true).toList();
+            _toDoList.where((item) => item.done == true).toList();
         break;
       case 3:
         _toDoListDisplay =
-            _toDoList.where((item) => item.isItCompleted == false).toList();
+            _toDoList.where((item) => item.done == false).toList();
         break;
     }
+    loading = false;
     notifyListeners();
   }
 }
 
 void main() {
   MyState state = MyState();
-
+  state.fetchToDoList();
+  state.updateDisplay();
   runApp(
     ChangeNotifierProvider(create: (context) => state, child: MyApp()),
   );
@@ -113,113 +124,10 @@ class MyHomePage extends StatelessWidget {
                 MaterialPageRoute(builder: (context) => AddItemToToDoPage()));
           },
           child: Icon(Icons.add),
-        ));
-  }
-}
-
-class ToDoItem {
-  final String actionItem;
-  bool isItCompleted;
-  ToDoItem(this.actionItem, this.isItCompleted);
-}
-
-class ToDoButton extends StatelessWidget {
-  final ToDoItem event;
-  ToDoButton(this.event, {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-        decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: Colors.grey))),
-        child: Row(mainAxisAlignment: MainAxisAlignment.start, children: [
-          Padding(
-            padding: EdgeInsets.all(15),
-            child: Checkbox(
-              value: event.isItCompleted,
-              onChanged: (value) => context.read<MyState>().updateStatus(event),
-            ),
-          ),
-          Text(
-            event.actionItem,
-            style: TextStyle(
-                fontSize: 21,
-                decoration:
-                    event.isItCompleted ? TextDecoration.lineThrough : null),
-          ),
-          Expanded(
-              child:
-                  Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Padding(
-              padding: EdgeInsets.all(15),
-              child: IconButton(
-                onPressed: () {
-                  context.read<MyState>().remove(event);
-                },
-                icon: Icon(
-                  Icons.close,
-                  size: 32,
-                ),
-              ),
-            ),
-          ])),
-        ]));
-  }
-}
-
-class AddItemToToDoPage extends StatelessWidget {
-  AddItemToToDoPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    String newItemToAdd = "";
-    return Scaffold(
-        appBar: AppBar(
-            title: const Text("TIG333 TODO",
-                style: TextStyle(color: Colors.white)),
-            backgroundColor: Colors.deepPurple),
-        body: Column(
-          children: [
-            Padding(
-              padding:
-                  EdgeInsets.only(right: 20, left: 20, top: 30, bottom: 30),
-              child: TextField(
-                onChanged: (value) {
-                  newItemToAdd = value;
-                },
-                decoration: InputDecoration(
-                    border: OutlineInputBorder(), hintText: "Input text here"),
-              ),
-            ),
-            GestureDetector(
-                onTap: () {
-                  if (newItemToAdd == "") {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: const Text("The text box is empty"),
-                          actions: <Widget>[
-                            TextButton(
-                              child: const Text('Ok'),
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  } else {
-                    context.read<MyState>().add(ToDoItem(newItemToAdd, false));
-                    Navigator.pop(context);
-                  }
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [Icon(Icons.add), Text("ADD")],
-                ))
-          ],
-        ));
+        ),
+        bottomSheet: Container(
+            color: Colors.white,
+            child: Icon(context.watch<MyState>().loading ? Icons.wifi : null,
+                size: 40)));
   }
 }
